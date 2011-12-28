@@ -1,10 +1,16 @@
 <?php
 
 /**
+ * Implementation of hook_init().
+ */
+function pagedown_init() {
+  pagedown_frontend_init();
+}
+
+/**
  * Implementation of hook_filter().
  */
 function pagedown_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 0) {
-
   switch ($op) {
     case 'list':
       return array(0 => t('Pagedown'));
@@ -16,25 +22,12 @@ function pagedown_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 
       // TODO: tacking on a client-side implementation for now. this should be updated to use
       // the node.js implementation, depending on the status of the node.js module (it would be a requirement)
 
-      // TODO: this is loading unnecessary files
-      pagedown_js_init();
+      $render = array();
+      $render[] = '<div class="wmd-content">';
+      $render[] = $text;
+      $render[] = '</div>';
 
-      $pagedown_content_init = <<<EOD
-      (function () {
-          $(function() {
-            var converter = new Markdown.Converter();
-            $('.wmd-content').each(function() {
-              var pagedown_content = $(this).html();
-              var html = converter.makeHtml(pagedown_content);
-              $(this).after(html);
-            });
-          });
-      })();
-EOD;
-
-      drupal_add_js($pagedown_content_init, 'inline');
-
-      return '<div class="wmd-content">' . $text . '</div>';
+      return join("\n", $render);
 
     default:
       return $text;
@@ -45,7 +38,8 @@ EOD;
  * Implementation of hook_filter_tips().
  */
 function pagedown_filter_tips($delta, $format, $long = FALSE) {
-  return t('Pagedown tips coming here soon.');
+  // TODO: add tips
+  return t('Pagedown tips coming soon.');
 }
 
 /**
@@ -62,10 +56,9 @@ function pagedown_elements() {
 }
 
 /**
- * Initialization for Pagedown javascript. Note this is called manually, rather than
- * implementing hook_init
+ * Initialization for Pagedown javascript.
  */
-function pagedown_js_init() {
+function pagedown_frontend_init() {
   static $pd_init = false;
 
   if(!$pd_init) {
@@ -76,6 +69,7 @@ function pagedown_js_init() {
     drupal_add_js($mod_path . '/js/Markdown.Converter.js');
     drupal_add_js($mod_path . '/js/Markdown.Editor.js');
     drupal_add_js($mod_path . '/js/Markdown.Sanitizer.js');
+    drupal_add_js($mod_path . '/pagedown.js');
   }
 }
 
@@ -83,7 +77,6 @@ function pagedown_js_init() {
  * Process a textarea for use with Pagedown
  */
 function pagedown_process_textarea($element) {
-  pagedown_js_init();
 
   // check if we are acting on this element
   $targets = pagedown_get_targets();
