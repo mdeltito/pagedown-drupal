@@ -1,0 +1,4 @@
+name = Pagedown
+description = Provides the Pagedown editor as an input filter
+core = 6.x
+package = Filters

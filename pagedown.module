@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * Implementation of hook_filter().
+ */
+function pagedown_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 0) {
+
+  switch ($op) {
+    case 'list':
+      return array(0 => t('Pagedown'));
+
+    case 'description':
+      return t('Allows users to post using the Pagedown editor');
+
+    case 'process':
+      // TODO: tacking on a client-side implementation for now. this should be updated to use
+      // the node.js implementation, depending on the status of the node.js module (it would be a requirement)
+
+      // TODO: this is loading unnecessary files
+      pagedown_js_init();
+
+      $pagedown_content_init = <<<EOD
+      (function () {
+          $(function() {
+            var converter = new Markdown.Converter();
+            $('.wmd-content').each(function() {
+              var pagedown_content = $(this).html();
+              var html = converter.makeHtml(pagedown_content);
+              $(this).after(html);
+            });
+          });
+      })();
+EOD;
+
+      drupal_add_js($pagedown_content_init, 'inline');
+
+      return '<div class="wmd-content">' . $text . '</div>';
+
+    default:
+      return $text;
+  }
+}
+
+/**
+ * Implementation of hook_filter_tips().
+ */
+function pagedown_filter_tips($delta, $format, $long = FALSE) {
+  return t('Pagedown tips coming here soon.');
+}
+
+/**
+ * Implementation of hook_elements
+ */
+function pagedown_elements() {
+  $type = array();
+  if (user_access('access pagedown')) {
+    // Let Pagedown potentially process each textarea.
+    $type['textarea'] = array('#process' => array('pagedown_process_textarea'));
+  }
+
+  return $type;
+}
+
+/**
+ * Initialization for Pagedown javascript. Note this is called manually, rather than
+ * implementing hook_init
+ */
+function pagedown_js_init() {
+  static $pd_init = false;
+
+  if(!$pd_init) {
+    $pd_run = true;
+
+    $mod_path = drupal_get_path('module', 'pagedown');
+    drupal_add_css($mod_path . '/pagedown.css', 'module', 'all', FALSE);
+    drupal_add_js($mod_path . '/js/Markdown.Converter.js');
+    drupal_add_js($mod_path . '/js/Markdown.Editor.js');
+    drupal_add_js($mod_path . '/js/Markdown.Sanitizer.js');
+  }
+}
+
+/**
+ * Process a textarea for use with Pagedown
+ */
+function pagedown_process_textarea($element) {
+  pagedown_js_init();
+
+  // check if we are acting on this element
+  $targets = pagedown_get_targets();
+  kpr($target);
+  if(!in_array($element['#id'], $targets)) return $element;
+
+  $selector = $element['#id'];
+  $pagedown_element_init = <<<EOD
+  (function () {
+      $(function() {
+
+        var bar = $('<div/>').attr('id', '$selector-bar');
+        var preview_wrap = $('<div/>').attr('id', '$selector-preview-wrap').addClass('wmd-preview-wrap');
+        var preview = $('<div/>').attr('id', '$selector-preview').addClass('wmd-preview');
+
+        preview.appendTo(preview_wrap);
+
+        $('#$selector').before(bar);
+        $('#$selector-wrapper').after(preview_wrap);
+
+        var textarea_converter = new Markdown.Converter();
+        var help = function () { alert("Not yet implemented"); }
+
+        var editor = new Markdown.Editor(textarea_converter, "{$element['#id']}", { handler: help });
+        editor.run();
+
+      });
+  })();
+EOD;
+
+  drupal_add_js($pagedown_element_init, 'inline');
+  return $element;
+}
+
+/**
+ * TODO: this should collect individual values from the database. currently the form element targets are
+ * stored in a single variable. eventually, controls to enable this per-textarea should be added
+ */
+function pagedown_get_targets() {
+  static $targets = array();
+  static $checked = false;
+
+  if(!$checked) {
+    $checked = true;
+
+    // TODO: again, this should collect from db rather than a single variable
+    $targets = variable_get('pagedown_elements', array());
+  }
+
+  return $targets;
+}
