@@ -87,7 +87,6 @@ function pagedown_process_textarea($element) {
 
   // check if we are acting on this element
   $targets = pagedown_get_targets();
-  kpr($target);
   if(!in_array($element['#id'], $targets)) return $element;
 
   $selector = $element['#id'];
