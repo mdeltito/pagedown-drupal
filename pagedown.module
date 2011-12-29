@@ -1,13 +1,6 @@
 <?php
 
 /**
- * Implementation of hook_init().
- */
-function pagedown_init() {
-  pagedown_frontend_init();
-}
-
-/**
  * Implementation of hook_filter().
  */
 function pagedown_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 0) {
@@ -16,18 +9,12 @@ function pagedown_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 
       return array(0 => t('Pagedown'));
 
     case 'description':
-      return t('Allows users to post using the Pagedown editor');
+      return t('Allows users to post using the Pagedown editor with Markdown');
 
     case 'process':
-      // TODO: tacking on a client-side implementation for now. this should be updated to use
-      // the node.js implementation, depending on the status of the node.js module (it would be a requirement)
-
-      $render = array();
-      $render[] = '<div class="wmd-content">';
-      $render[] = $text;
-      $render[] = '</div>';
-
-      return join("\n", $render);
+      require('markdown.php');
+      $html = Markdown($text);
+      return $html;
 
     default:
       return $text;
@@ -56,20 +43,19 @@ function pagedown_elements() {
 }
 
 /**
- * Initialization for Pagedown javascript.
+ * Initialization for Pagedown javascript/css.
  */
-function pagedown_frontend_init() {
+function pagedown_asset_init() {
   static $pd_init = false;
 
   if(!$pd_init) {
-    $pd_run = true;
+    $pd_init = true;
 
     $mod_path = drupal_get_path('module', 'pagedown');
     drupal_add_css($mod_path . '/pagedown.css', 'module', 'all', FALSE);
     drupal_add_js($mod_path . '/js/Markdown.Converter.js');
     drupal_add_js($mod_path . '/js/Markdown.Editor.js');
     drupal_add_js($mod_path . '/js/Markdown.Sanitizer.js');
-    drupal_add_js($mod_path . '/pagedown.js');
   }
 }
 
@@ -77,6 +63,7 @@ function pagedown_frontend_init() {
  * Process a textarea for use with Pagedown
  */
 function pagedown_process_textarea($element) {
+  pagedown_asset_init();
 
   // check if we are acting on this element
   $targets = pagedown_get_targets();
