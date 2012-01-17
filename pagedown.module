@@ -18,7 +18,7 @@ function pagedown_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 
       return t('Allows users to post using the Pagedown editor with Markdown');
 
     case 'process':
-      require('markdown.php');
+      require_once('markdown.php');
       $html = Markdown($text);
       return $html;
 
@@ -118,5 +118,4 @@ function pagedown_get_targets() {
     $targets = variable_get('pagedown_elements', array());
   }
 
-  return $targets;
-}
+  return $target
