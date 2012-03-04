@@ -118,4 +118,5 @@ function pagedown_get_targets() {
     $targets = variable_get('pagedown_elements', array());
   }
 
-  return $target
+  return $targets;
+}
